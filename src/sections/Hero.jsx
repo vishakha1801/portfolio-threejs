@@ -61,7 +61,7 @@ const Hero = () => {
           cursor: isZoomed ? 'default' : 'pointer',
           background: 'radial-gradient(ellipse at 45% 55%, #3a3a3a 0%, #1c1c1c 35%, #0a0a0a 65%, #000000 100%)',
         }}
-        onMouseMove={() => { if (!isZoomed) setIsZoomed(true); }}
+        onMouseMove={() => { if (!isZoomed && screenMeshRef.current) setIsZoomed(true); }}
         onClick={() => { if (isZoomed) handleClose(); }}
       >
         {/* Film grain overlay */}

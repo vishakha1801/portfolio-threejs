@@ -92,12 +92,7 @@ const MonitorController = ({
           camera.lookAt(screenCenter);
           camera.updateMatrixWorld(true);
           const bounds = computeBounds();
-          onZoomComplete(bounds ?? {
-            left:   window.innerWidth  * 0.15,
-            top:    window.innerHeight * 0.15,
-            width:  window.innerWidth  * 0.7,
-            height: window.innerHeight * 0.7,
-          });
+          if (bounds) onZoomComplete(bounds);
         },
       });
 
