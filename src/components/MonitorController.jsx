@@ -56,8 +56,8 @@ const MonitorController = ({
     const rawHeight = Math.max(...ys) - rawTop;
 
     // Inset per side to trim geometry border so overlay matches visible screen area
-    const ix = rawWidth  * 0.019;
-    const iy = rawHeight * 0.019;
+    const ix = rawWidth  * 0.02;
+    const iy = rawHeight * 0.02;
     return { left: rawLeft + ix, top: rawTop + iy, width: rawWidth - ix * 2, height: rawHeight - iy * 2 };
   }, [camera, gl, screenMeshRef]);
 

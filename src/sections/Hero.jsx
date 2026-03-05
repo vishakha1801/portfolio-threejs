@@ -2,10 +2,10 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { Canvas } from '@react-three/fiber';
 import { PerspectiveCamera, OrbitControls } from '@react-three/drei';
 
-import CanvasLoader from '../components/Loading.jsx';
 import { HackerRoom } from '../components/HackerRoom.jsx';
 import MonitorController from '../components/MonitorController.jsx';
 import MacOSDesktop from '../components/MacOSDesktop.jsx';
+import CanvasLoader from '../components/Loading.jsx';
 
 const GrainParticles = () => {
   const positions = useMemo(() => {
@@ -31,7 +31,7 @@ const GrainParticles = () => {
 };
 
 const Hero = () => {
-  const [isZoomed, setIsZoomed]         = useState(false);
+  const [isZoomed, setIsZoomed]           = useState(false);
   const [overlayBounds, setOverlayBounds] = useState(null);
 
   const controlsRef   = useRef();
@@ -96,6 +96,7 @@ const Hero = () => {
             <directionalLight position={[10, 10, 10]} intensity={1.0} />
             <directionalLight position={[-10, 5, -5]} intensity={0.5} />
           </Suspense>
+
         </Canvas>
       </div>
 
