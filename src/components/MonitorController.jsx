@@ -88,10 +88,10 @@ const MonitorController = ({
     const rawWidth  = Math.max(...xs) - rawLeft;
     const rawHeight = Math.max(...ys) - rawTop;
 
-    // Inset per side to trim geometry border so overlay matches visible screen area
-    const ix = rawWidth  * 0.02;
+    // Inset per side — horizontal inset is larger to pull the overlay inside the bezel edges
+    const ix = rawWidth  * 0.031;
     const iy = rawHeight * 0.02;
-    return { left: rawLeft + ix, top: rawTop + iy, width: rawWidth - ix * 2, height: rawHeight - iy * 2 };
+    return { left: rawLeft + ix + 1.5, top: rawTop + iy, width: rawWidth - ix * 2, height: rawHeight - iy * 2 };
   }, [camera, gl, screenMeshRef]);
 
   // ── Zoom in / out on isZoomed change ────────────────────────────────────────

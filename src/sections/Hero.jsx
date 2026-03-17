@@ -1,173 +1,114 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Canvas } from '@react-three/fiber';
 import { PerspectiveCamera, OrbitControls, ContactShadows } from '@react-three/drei';
-import * as THREE from 'three';
-import gsap from 'gsap';
 
-import { HackerRoom } from '../components/HackerRoom.jsx';
-import MonitorController from '../components/MonitorController.jsx';
-import MacOSDesktop from '../components/MacOSDesktop.jsx';
-import CanvasLoader from '../components/Loading.jsx';
+import { Room }             from '../components/Room.jsx';
+import MonitorController    from '../components/MonitorController.jsx';
+import IntroController      from '../components/IntroController.jsx';
+import FreeCamController    from '../components/FreeCamController.jsx';
+import GrainParticles       from '../components/GrainParticles.jsx';
+import Desktop              from '../components/Desktop.jsx';
+import CanvasLoader         from '../components/Loading.jsx';
+import BiosLoader           from '../components/BiosLoader.jsx';
+import MobileWarning, { isMobileDevice } from '../components/MobileWarning.jsx';
+import { createAmbientAudio } from '../utils/audio.js';
 
-// shared font style — referenced by multiple UI components so kept at module level
-const VT = { fontFamily: "'VT323', monospace" };
+// ── HUD button — VT323 vintage terminal style ─────────────────────────────────
+const HudBtn = ({ title, active, onClick, label }) => (
+  <button
+    title={title}
+    onClick={onClick}
+    style={{
+      fontFamily: "'VT323', monospace",
+      fontSize: 15, letterSpacing: 2,
+      background: 'rgba(0,0,0,0.75)',
+      border: `1px solid ${active ? '#c8a96e' : '#555'}`,
+      color: active ? '#c8a96e' : '#aaa',
+      padding: '4px 10px',
+      cursor: 'pointer',
+      backdropFilter: 'blur(6px)',
+      transition: 'border-color 0.2s, color 0.2s',
+      userSelect: 'none',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.borderColor = '#c8a96e'; e.currentTarget.style.color = '#c8a96e'; }}
+    onMouseLeave={e => { e.currentTarget.style.borderColor = active ? '#c8a96e' : '#555'; e.currentTarget.style.color = active ? '#c8a96e' : '#aaa'; }}
+  >{label}</button>
+);
 
-// far-back position the camera starts at before the user dismisses the intro
-const INTRO_POS  = new THREE.Vector3(0, 2.2, 6.5);
-// resting position once intro is gone — close enough to read the scene, not claustrophobic
-const HOME_POS   = new THREE.Vector3(0, 0.3, 1.75);
-const HOME_TARGET = new THREE.Vector3(0, 0, 0);
-
-/* ── Sets camera to zoomed-out on mount, animates home when intro ends ── */
-const IntroController = ({ introComplete, controlsRef }) => {
-  const { camera } = useThree();
-  const tweenRef = useRef(null);
-
-  // On mount: snap camera to far-out position so the intro feels like "entering" the scene
-  useEffect(() => {
-    camera.position.copy(INTRO_POS);
-    camera.lookAt(HOME_TARGET);
-    if (controlsRef.current) {
-      controlsRef.current.target.copy(HOME_TARGET);
-      controlsRef.current.update();
-      // keep orbit controls locked until the user is actually at the home position
-      controlsRef.current.enabled = false;
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // When intro dismissed: fly camera to home
-  useEffect(() => {
-    if (!introComplete) return;
-    // kill any in-progress tween before starting a new one — avoids competing animations
-    if (tweenRef.current) tweenRef.current.kill();
-    tweenRef.current = gsap.to(camera.position, {
-      x: HOME_POS.x, y: HOME_POS.y, z: HOME_POS.z,
-      duration: 1.6,
-      ease: 'power2.inOut',
-      onUpdate: () => camera.lookAt(HOME_TARGET),
-      onComplete: () => {
-        if (controlsRef.current) {
-          controlsRef.current.target.copy(HOME_TARGET);
-          controlsRef.current.update();
-          controlsRef.current.enabled = true;
-        }
-      },
-    });
-  }, [introComplete]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  return null;
-};
-
-/* ── "Click anywhere to begin" — types in with random delays ── */
-const HelpPrompt = ({ visible }) => {
-  const HELP_TEXT = 'Click anywhere to begin';
-  const [text, setText] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    const type = (i, cur) => {
-      if (i >= HELP_TEXT.length || cancelled) return;
-      // random per-character delay (40–120 ms) makes it feel like real typing, not an animation
-      setTimeout(() => {
-        const next = cur + HELP_TEXT[i];
-        setText(next);
-        type(i + 1, next);
-      }, Math.random() * 80 + 40);
-    };
-    // 600 ms head start gives the 3D scene time to load before drawing attention here
-    setTimeout(() => type(0, ''), 600);
-    return () => { cancelled = true; };
-  }, []);
-
-  if (!text) return null;
-
-  return (
-    <div style={{
-      position: 'absolute', bottom: 52, width: '100%',
-      display: 'flex', justifyContent: 'center',
-      pointerEvents: 'none', zIndex: 10,
-      opacity: visible ? 1 : 0,
-      transform: visible ? 'translateY(0)' : 'translateY(10px)',
-      transition: 'opacity 0.45s ease, transform 0.45s ease',
-    }}>
-      <span style={{ ...VT, fontSize: 26, color: '#d0d0d0', letterSpacing: 2 }}>
-        {text}
-        {visible && <span style={{ animation: 'blink 0.7s step-end infinite', marginLeft: 2 }}>█</span>}
-      </span>
-    </div>
-  );
-};
-
-/* ── Grain particles ── */
-const GrainParticles = () => {
-  // useMemo so the Float32Array is only allocated once — not on every render
-  const positions = useMemo(() => {
-    const arr = new Float32Array(8000 * 3);
-    for (let i = 0; i < 8000; i++) {
-      // spherical distribution keeps particles uniform — simple random XYZ would cluster at corners
-      const r     = 20 + Math.random() * 120;
-      const theta = Math.random() * Math.PI * 2;
-      const phi   = Math.acos(2 * Math.random() - 1);
-      arr[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
-      arr[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-      arr[i * 3 + 2] = r * Math.cos(phi);
-    }
-    return arr;
-  }, []);
-  return (
-    <points>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-      </bufferGeometry>
-      {/* sizeAttenuation=false keeps stars the same pixel size regardless of depth */}
-      <pointsMaterial size={1} color="#999999" transparent opacity={0.35} sizeAttenuation={false} />
-    </points>
-  );
-};
-
-const Hero = () => {
+// ── Hero ──────────────────────────────────────────────────────────────────────
+const Hero = ({ onIntroComplete }) => {
+  const [mobileWarningDone, setMobileWarningDone] = useState(() => !isMobileDevice());
   const [introComplete, setIntroComplete] = useState(false);
-  const [isZoomed, setIsZoomed]           = useState(false);
+  const [isZoomed,      setIsZoomed]      = useState(false);
   const [overlayBounds, setOverlayBounds] = useState(null);
+  const [freeCam,       setFreeCam]       = useState(false);
+  const [muted,         setMuted]         = useState(false);
 
   const controlsRef    = useRef();
   const screenMeshRef  = useRef();
   const coolingDownRef = useRef(false);
+  const audioRef       = useRef(null);
 
-  const handleBoundsUpdate = useCallback((bounds) => setOverlayBounds(bounds), []);
+  const handleBoundsUpdate = useCallback((b) => setOverlayBounds(b), []);
 
   const handleClose = useCallback(() => {
     setOverlayBounds(null);
     setIsZoomed(false);
-    // cooldown prevents a re-zoom click from firing while the camera is still travelling back
     coolingDownRef.current = true;
-    setTimeout(() => { coolingDownRef.current = false; }, 1600); // match zoom-out tween duration
+    setTimeout(() => { coolingDownRef.current = false; }, 1600);
   }, []);
 
+  const handleBiosStart = useCallback(() => {
+    setIntroComplete(true);
+    onIntroComplete?.();
+    audioRef.current = createAmbientAudio();
+    audioRef.current.play();
+  }, [onIntroComplete]);
+
+  const toggleMute = useCallback(() => {
+    setMuted(m => {
+      const next = !m;
+      if (audioRef.current) audioRef.current.muted = next;
+      return next;
+    });
+  }, []);
+
+  const toggleFreeCam = useCallback(() => {
+    setFreeCam(f => !f);
+    if (isZoomed) handleClose();
+  }, [isZoomed, handleClose]);
+
+  // Escape key — close overlay or exit free cam
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === 'Escape' && isZoomed) handleClose();
+      if (e.key !== 'Escape') return;
+      if (isZoomed) handleClose();
+      if (freeCam) setFreeCam(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isZoomed, handleClose]);
+  }, [isZoomed, freeCam, handleClose]);
 
+  // Canvas click — toggle zoom (disabled during free cam)
   const handleClick = useCallback(() => {
-    // three-stage click: dismiss intro → zoom into monitor → zoom back out
-    if (!introComplete) setIntroComplete(true);
-    else if (!isZoomed && !coolingDownRef.current) setIsZoomed(true);
+    if (!introComplete || freeCam) return;
+    if (!isZoomed && !coolingDownRef.current) setIsZoomed(true);
     else if (isZoomed) handleClose();
-  }, [introComplete, isZoomed, handleClose]);
+  }, [introComplete, isZoomed, freeCam, handleClose]);
+
+  // Stop audio on unmount
+  useEffect(() => () => { audioRef.current?.pause(); }, []);
 
   return (
-    <section id="home" style={{ height: '100vh' }} className="w-full flex flex-col relative overflow-hidden">
+    <section id="home" style={{ height: '100vh', position: 'relative', overflow: 'hidden' }}>
       <style>{`@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }`}</style>
 
+      {/* 3D canvas */}
       <div
         className="absolute inset-0"
         style={{
-          cursor: 'pointer',
-          background: 'radial-gradient(ellipse at 45% 55%, #3a3a3a 0%, #1c1c1c 35%, #0a0a0a 65%, #000000 100%)',
+          cursor: freeCam ? 'grab' : introComplete ? 'pointer' : 'default',
+          background: 'radial-gradient(ellipse at 45% 55%, #3a3a3a 0%, #1c1c1c 35%, #0a0a0a 65%, #000 100%)',
         }}
         onClick={handleClick}
       >
@@ -184,8 +125,8 @@ const Hero = () => {
             <PerspectiveCamera makeDefault position={[0, 0.3, 1.75]} fov={65} />
             <OrbitControls ref={controlsRef} enableZoom={false} />
 
-            <IntroController introComplete={introComplete} controlsRef={controlsRef} />
-
+            <IntroController   introComplete={introComplete} controlsRef={controlsRef} />
+            <FreeCamController freeCam={freeCam}             controlsRef={controlsRef} />
             <GrainParticles />
 
             <MonitorController
@@ -197,24 +138,41 @@ const Hero = () => {
               onBoundsChange={handleBoundsUpdate}
             />
 
-            <HackerRoom scale={8} position={[0, -0.3, 0]} screenMeshRef={screenMeshRef} />
+            <Room scale={8} position={[0, -0.3, 0]} screenMeshRef={screenMeshRef} />
 
-            {/* two shadow passes: soft wide one for ambience, tight sharp one for contact grounding */}
-            <ContactShadows position={[0, -0.3, 0]} opacity={0.75} scale={5} blur={3.5} far={2} color="#000000" />
+            <ContactShadows position={[0, -0.3, 0]} opacity={0.75} scale={5}   blur={3.5} far={2}   color="#000000" />
             <ContactShadows position={[0, -0.3, 0]} opacity={0.45} scale={2.5} blur={0.8} far={0.8} color="#000000" />
 
             <ambientLight intensity={0.7} />
-            <directionalLight position={[10, 10, 10]} intensity={1.4} />
-            <directionalLight position={[-10, 5, -5]} intensity={0.2} />
+            <directionalLight position={[10, 10, 10]}  intensity={1.4} />
+            <directionalLight position={[-10, 5, -5]}  intensity={0.2} />
           </Suspense>
         </Canvas>
 
-        <HelpPrompt visible={!introComplete} />
+        {/* Free cam hint */}
+        {freeCam && (
+          <div style={{
+            position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+            fontFamily: "'VT323', monospace", fontSize: 16, color: '#555',
+            pointerEvents: 'none', letterSpacing: 2,
+          }}>
+            FREE CAM  ·  DRAG TO ORBIT  ·  ESC TO EXIT
+          </div>
+        )}
       </div>
 
-      {overlayBounds && isZoomed && (
-        <MacOSDesktop bounds={overlayBounds} onClose={handleClose} />
+      {/* HUD — visible after intro */}
+      {introComplete && (
+        <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 8, zIndex: 20 }}>
+          <HudBtn title={muted ? 'Unmute' : 'Mute'}              active={muted}    onClick={toggleMute}    label={muted    ? '[ MUTE ]'     : '[ SOUND ]'} />
+          <HudBtn title={freeCam ? 'Exit free cam' : 'Free camera'} active={freeCam} onClick={toggleFreeCam} label={freeCam  ? '[ EXIT CAM ]' : '[ FREE CAM ]'} />
+        </div>
       )}
+
+      {/* Mobile warning → BIOS → desktop overlay */}
+      {!mobileWarningDone && <MobileWarning onContinue={() => setMobileWarningDone(true)} />}
+      {mobileWarningDone && !introComplete && <BiosLoader onStart={handleBiosStart} />}
+      {overlayBounds && isZoomed && <Desktop bounds={overlayBounds} onClose={handleClose} />}
     </section>
   );
 };
