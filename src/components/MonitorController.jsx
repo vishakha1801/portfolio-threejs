@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { useThree } from '@react-three/fiber';
+import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import gsap from 'gsap';
 
@@ -9,13 +9,46 @@ const HOME_TARGET = new THREE.Vector3(0, 0, 0);
 
 const MonitorController = ({
   isZoomed,
+  introComplete,
   controlsRef,
   screenMeshRef,
   onZoomComplete,
   onBoundsChange,
 }) => {
   const { camera, gl } = useThree();
-  const tweenRef = useRef(null);
+  const tweenRef        = useRef(null);
+  const mouseRef        = useRef({ x: 0, y: 0 });
+  const parallaxRef     = useRef({ x: 0, y: 0 });
+  const blockParallaxRef = useRef(false);
+
+  // Track normalised mouse position (-0.5 … 0.5)
+  useEffect(() => {
+    const onMove = (e) => {
+      mouseRef.current = {
+        x:  e.clientX / window.innerWidth  - 0.5,
+        y:  e.clientY / window.innerHeight - 0.5,
+      };
+    };
+    window.addEventListener('mousemove', onMove);
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
+
+  // Subtle camera parallax while in home view
+  useFrame(() => {
+    // skip entirely during intro or when a zoom tween owns the camera
+    if (!introComplete || blockParallaxRef.current) return;
+
+    const tx = mouseRef.current.x *  0.35;
+    const ty = mouseRef.current.y * -0.22;
+
+    // lerp factor 0.06 gives a lazy follow — snappier values feel jittery on fast mouse moves
+    parallaxRef.current.x += (tx - parallaxRef.current.x) * 0.06;
+    parallaxRef.current.y += (ty - parallaxRef.current.y) * 0.06;
+
+    camera.position.x = HOME_POS.x + parallaxRef.current.x;
+    camera.position.y = HOME_POS.y + parallaxRef.current.y;
+    camera.lookAt(HOME_TARGET);
+  });
 
   // ── Bound projection ────────────────────────────────────────────────────────
   const computeBounds = useCallback(() => {
@@ -66,7 +99,10 @@ const MonitorController = ({
     if (tweenRef.current) tweenRef.current.kill();
 
     if (isZoomed) {
-      // Get screen center in world space from the mesh ref
+      // block parallax during the whole zoom cycle so the camera doesn't jerk against the tween
+      blockParallaxRef.current = true;
+
+      // fallback coords used if the ref isn't attached yet — measured from the GLTF geometry
       const screenCenter = screenMeshRef.current
         ? screenMeshRef.current.getWorldPosition(new THREE.Vector3())
         : new THREE.Vector3(-0.1874, 0.365, 0.343);
@@ -84,8 +120,8 @@ const MonitorController = ({
 
       tweenRef.current = gsap.to(camera.position, {
         x: zoomPos.x, y: zoomPos.y, z: zoomPos.z,
-        duration: 1.2,
-        ease: 'power2.inOut',
+        duration: 1.4,
+        ease: 'power4.out',
         onUpdate: () => camera.lookAt(screenCenter),
         onComplete: () => {
           // Force matrix update so projection is accurate at rest
@@ -100,8 +136,8 @@ const MonitorController = ({
       if (controlsRef.current) {
         gsap.to(controlsRef.current.target, {
           x: screenCenter.x, y: screenCenter.y, z: screenCenter.z,
-          duration: 1.2,
-          ease: 'power2.inOut',
+          duration: 1.4,
+          ease: 'power4.out',
           onUpdate: () => controlsRef.current?.update(),
         });
       }
@@ -116,6 +152,9 @@ const MonitorController = ({
         ease: 'power2.inOut',
         onUpdate: () => camera.lookAt(HOME_TARGET),
         onComplete: () => {
+          // reset parallax accumulator so the camera doesn't jump if mouse moved during zoom
+          blockParallaxRef.current = false;
+          parallaxRef.current = { x: 0, y: 0 };
           if (controlsRef.current) {
             controlsRef.current.target.copy(HOME_TARGET);
             controlsRef.current.update();

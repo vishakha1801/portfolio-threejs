@@ -1,16 +1,37 @@
-# React + Vite
+# portfolio-threejs
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An interactive 3D portfolio built with React Three Fiber. Features a hacker room scene where hovering over the monitor zooms the camera in and reveals a retro Windows 95 desktop overlay with portfolio content.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React 19** + **Vite**
+- **React Three Fiber** + **drei** — 3D scene, camera, controls
+- **GSAP** — smooth camera zoom animations
+- **Tailwind CSS v4**
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- 3D hacker room model with interactive monitor
+- Mouse-movement-triggered camera zoom (12px threshold)
+- Win95 desktop overlay with CRT effects (scanlines, jitter, flicker, rolling scan band)
+- Portfolio content in a Win95 Explorer-style window: About, Experience, Projects, Contact
+- Playable Tetris window
+- Responsive overlay that tracks the 3D screen mesh in world space
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm install
+npm run dev
+```
+
+```bash
+npm run build   # production build
+npm run preview # preview build locally
+```
+
+## Interaction
+
+- **Hover + move mouse** over the scene → camera zooms into the monitor
+- **Click** or press **Escape** → zoom out
+- Inside the overlay: double-click desktop icons to open windows
