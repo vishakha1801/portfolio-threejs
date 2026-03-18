@@ -66,6 +66,7 @@ const BiosLoader = ({ onStart }) => {
     }}>
       <style>{`
         @keyframes bios-pulse  { 0%,100%{opacity:1} 50%{opacity:0} }
+        @keyframes btn-glow    { 0%,100%{box-shadow:0 0 6px #c8a96e44} 50%{box-shadow:0 0 18px #c8a96eaa} }
         @keyframes dialog-in   { from{opacity:0;transform:translate(-50%,-48%)} to{opacity:1;transform:translate(-50%,-50%)} }
       `}</style>
 
@@ -73,8 +74,7 @@ const BiosLoader = ({ onStart }) => {
       <div style={{
         position: 'absolute', inset: 0,
         padding: '8vh 8vw',
-        // dim the background when the dialog is up so it reads clearly
-        opacity: showDialog ? 0.25 : 1,
+        opacity: showDialog ? 0 : 1,
         transition: 'opacity 0.4s ease',
       }}>
         {visibleLines.map((line, i) => (
@@ -144,13 +144,16 @@ const BiosLoader = ({ onStart }) => {
               background: 'transparent',
               border: `1px solid ${AMBER}`, color: AMBER,
               padding: '10px 40px', cursor: 'pointer',
-              animation: 'bios-pulse 1.4s step-end infinite',
+              animation: 'btn-glow 2s ease-in-out infinite',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = AMBER; e.currentTarget.style.color = '#000'; e.currentTarget.style.animation = 'none'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = AMBER; e.currentTarget.style.animation = 'bios-pulse 1.4s step-end infinite'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = AMBER; e.currentTarget.style.animation = 'btn-glow 2s ease-in-out infinite'; }}
           >
             START
           </button>
+          <div style={{ color: DIM, fontSize: 14, marginTop: 16, letterSpacing: 1 }}>
+            click start to begin
+          </div>
         </div>
       )}
     </div>
