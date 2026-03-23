@@ -1,6 +1,6 @@
 # portfolio-threejs
 
-An interactive 3D portfolio built with React Three Fiber. Features a hacker room scene where hovering over the monitor zooms the camera in and reveals a retro Windows 95 desktop overlay with portfolio content.
+Interactive 3D application using React Three Fiber and Tailwind CSS featuring an immersive room environment with camera animations and a Windows 95 desktop overlay with CRT effects, draggable windows, and embedded mini-applications
 
 ## Stack
 
