@@ -4,7 +4,6 @@ Interactive 3D application using React Three Fiber and Tailwind CSS featuring an
 
 ## Stack
 
-
 - **React 19** + **Vite**
 - **React Three Fiber** + **drei** — 3D scene, camera, controls
 - **GSAP** — smooth camera zoom animations
