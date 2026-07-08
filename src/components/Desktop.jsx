@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import NoiseOverlay      from './desktop/NoiseOverlay.jsx';
+import CrtOverlay        from './CrtOverlay.jsx';
 import Win95Window       from './desktop/Win95Window.jsx';
 import ShowcaseExplorer, { WINDOW_W, WINDOW_H } from './desktop/ShowcaseExplorer.jsx';
 import TetrisGame        from './desktop/TetrisGame.jsx';
@@ -152,42 +153,12 @@ const Desktop = ({ bounds, onClose }) => {
           95%  { filter: brightness(0.962); }
           100% { filter: brightness(0.981); }
         }
-        @keyframes scan-roll {
-          0%   { transform: translateY(-8%); }
-          100% { transform: translateY(108%); }
-        }
       `}</style>
 
       {/* CRT effects wrapper */}
       <div style={{ position: 'absolute', inset: 0, animation: 'crt-flicker 0.15s steps(1) infinite' }}>
         <NoiseOverlay w={Math.round(bounds.width)} h={Math.round(bounds.height)} />
-
-        {/* Scanlines */}
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 9999, pointerEvents: 'none',
-          backgroundImage: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px, transparent 1px, transparent 2px)',
-        }} />
-
-        {/* Rolling scan band */}
-        <div style={{
-          position: 'absolute', left: 0, right: 0, height: '8%',
-          background: 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.018) 50%, transparent 100%)',
-          animation: 'scan-roll 4s linear infinite',
-          pointerEvents: 'none', zIndex: 9998,
-        }} />
-
-        {/* Corner vignette */}
-        <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 9997,
-          background: 'radial-gradient(ellipse at 50% 50%, transparent 75%, rgba(0,0,0,0.16) 100%)',
-        }} />
-
-        {/* Top-edge glint */}
-        <div style={{
-          position: 'absolute', top: 0, left: '8%', right: '8%', height: 1,
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0.12) 70%, transparent)',
-          pointerEvents: 'none', zIndex: 9997,
-        }} />
+        <CrtOverlay />
 
         {/* Desktop area */}
         <div style={{
