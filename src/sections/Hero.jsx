@@ -14,6 +14,8 @@ import MobileWarning, { isMobileDevice } from '../components/MobileWarning.jsx';
 import { createAmbientAudio } from '../utils/audio.js';
 
 // ── HUD button — VT323 vintage terminal style ─────────────────────────────────
+const ROSE = '#c99a94'; // same muted dusty-rose accent as the BIOS loader
+
 const HudBtn = ({ title, active, onClick, label }) => (
   <button
     title={title}
@@ -22,16 +24,16 @@ const HudBtn = ({ title, active, onClick, label }) => (
       fontFamily: "'VT323', monospace",
       fontSize: 15, letterSpacing: 2,
       background: 'rgba(0,0,0,0.75)',
-      border: `1px solid ${active ? '#c8a96e' : '#555'}`,
-      color: active ? '#c8a96e' : '#aaa',
+      border: `1px solid ${active ? ROSE : '#555'}`,
+      color: active ? ROSE : '#aaa',
       padding: '4px 10px',
       cursor: 'pointer',
       backdropFilter: 'blur(6px)',
       transition: 'border-color 0.2s, color 0.2s',
       userSelect: 'none',
     }}
-    onMouseEnter={e => { e.currentTarget.style.borderColor = '#c8a96e'; e.currentTarget.style.color = '#c8a96e'; }}
-    onMouseLeave={e => { e.currentTarget.style.borderColor = active ? '#c8a96e' : '#555'; e.currentTarget.style.color = active ? '#c8a96e' : '#aaa'; }}
+    onMouseEnter={e => { e.currentTarget.style.borderColor = ROSE; e.currentTarget.style.color = ROSE; }}
+    onMouseLeave={e => { e.currentTarget.style.borderColor = active ? ROSE : '#555'; e.currentTarget.style.color = active ? ROSE : '#aaa'; }}
   >{label}</button>
 );
 
